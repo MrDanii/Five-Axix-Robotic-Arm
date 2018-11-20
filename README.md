@@ -67,6 +67,10 @@ Los 5 ejes con los que cuenta el brazo son:
  ![](/Imagenes/Circuito1.jpg)
  ![](/Imagenes/Circuito2.jpg)
  
+ **Armar el robót de la siguiente manera**
+
+  ![](/Imagenes/Foto1.jpg)
+
  **2. Importar las librerias en los IDE correspondientes**
  
  **3. Descargar y ejecutar los códigos en las clases correspondientes**
@@ -75,4 +79,8 @@ Los 5 ejes con los que cuenta el brazo son:
  
  >Compilar el proyecto java [BrazoRobotico](https://github.com/MrDanii/Five-Axix-Robotic-Arm/tree/master/BrazoRobotico) y ejecutar la clase PruebaBrazoRobotico.java ubicada en
     src/BrazoRobotico/
+
+ >Se ejecutará la siguiente interfaz gráfica con la que podremos controlar el brazo
+
+   ![](/Imagenes/Interfaz.png)
 
