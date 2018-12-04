@@ -1,6 +1,3 @@
-/*
-
- */
 package BrazoRobotico;
 
 import gnu.io.CommPortIdentifier;
@@ -23,32 +20,41 @@ import javax.swing.event.ChangeListener;
 
 public class InterfazBrazo extends JFrame implements ActionListener, ChangeListener {
 
-    private JButton btnIzq, btnDer, btnAbortar, btnDemo, btnDesbloquear, btnBloquear;
+    //Declaracion de componentes que se utilizaran en la interfaz
+    private JButton btnIzq, btnDer, btnAbortar, btnGrabar, btnReproducir,
+            btnNoGrabar, btnBloquear, btnDesbloquear;
     private JSlider sliderP, sliderM, sliderC, sliderB;
     private JLabel lblPasos, lblP, lblM, lblC, lblB;
     private JPanel panel;
     Font estilo = new Font("Arial", Font.ITALIC, 16);
 
     // VARIABLES BRAZO
-    private static String izquierda, derecha, munheca, pinza, codo, brazo, abortar, demo, desbloquear, bloquear;
+    private static String izquierda, derecha, munheca, pinza, codo, brazo,
+            abortar, reproducir, grabar, bloquear, desbloquear;
 
     // VARIABLES DE CONEXION
     /**
-     * Se declara variable output para obtener el canal de salida 
+     * Se declara variable output para obtener el canal de salida y se inicia la
+     * comunicacion serial y el puerto correspondiente al que este conectado
      */
-    private OutputStream output = null;
-    static SerialPort serialPort;
-    private final String PUERTO = "/dev/ttyS0";
-    private static final int TIMEOUT = 10; // 2 SEGUNDOS
-    private static final int DATA_RATE = 9600; //BAUDIOS
+    private OutputStream output = null; // Canal de salida de datos
+    static SerialPort serialPort; // Comunicaccion del puerto serie
+    private final String PUERTO = "/dev/ttyS0"; // Puerto de comunicacion
+    private static final int TIMEOUT = 10; // Milisegundos de espera de abertura del puerto serial
+    private static final int DATA_RATE = 9600; //Baudios de bits por segundo para el puerto
 
+    // Constructor de la clase
     public InterfazBrazo() {
         super("Interfaz Brazo Robotico");
-        
-        initComponents();
-        iniciarConexion();
+
+        initComponents(); // Iniciamos los componentes de la interfaz
+        iniciarConexion(); // Realizamos la comunicacion con arduino
     }
-   
+
+    /*
+    Inicializacion de cada componente con su respectiva posicion y valores
+    de uso
+     */
     public void initComponents() {
         panel = new JPanel();
         this.getContentPane().add(panel);
@@ -70,24 +76,34 @@ public class InterfazBrazo extends JFrame implements ActionListener, ChangeListe
         btnDer.setBounds(260, 390, 100, 30);
         panel.add(btnDer);
         btnDer.addActionListener(this);
-        
+
         btnAbortar = new JButton("Abortar");
-        btnAbortar.setBounds(10, 390, 100, 30);
+        btnAbortar.setBounds(390, 290, 100, 30);
         panel.add(btnAbortar);
         btnAbortar.addActionListener(this);
-        
-        btnDemo = new JButton("Demo");
-        btnDemo.setBounds(10, 340, 100, 30);
-        panel.add(btnDemo);
-        btnDemo.addActionListener(this);
-        
+
+        btnNoGrabar = new JButton("Stop");
+        btnNoGrabar.setBounds(10, 340, 100, 30);
+        panel.add(btnNoGrabar);
+        btnNoGrabar.addActionListener(this);
+
+        btnGrabar = new JButton("Play");
+        btnGrabar.setBounds(10, 290, 100, 30);
+        panel.add(btnGrabar);
+        btnGrabar.addActionListener(this);
+
+        btnReproducir = new JButton("Reproducir");
+        btnReproducir.setBounds(10, 390, 100, 30);
+        panel.add(btnReproducir);
+        btnReproducir.addActionListener(this);
+
         btnBloquear = new JButton("Bloquear");
-        btnBloquear.setBounds(375, 340, 120, 30);
+        btnBloquear.setBounds(390, 340, 100, 30);
         panel.add(btnBloquear);
         btnBloquear.addActionListener(this);
-        
+
         btnDesbloquear = new JButton("Desbloquear");
-        btnDesbloquear.setBounds(375, 390, 120, 30);
+        btnDesbloquear.setBounds(390, 390, 100, 30);
         panel.add(btnDesbloquear);
         btnDesbloquear.addActionListener(this);
 
@@ -150,10 +166,14 @@ public class InterfazBrazo extends JFrame implements ActionListener, ChangeListe
         sliderB.addChangeListener(this);
     }
 
+    /*
+    Metodo que nos permite realizar la comunicacion con el IDE Arduino
+     */
     public void iniciarConexion() {
         CommPortIdentifier puertoID = null;
         Enumeration puertoEnum = CommPortIdentifier.getPortIdentifiers();
 
+        // Iteramos en los puertos para localizar el puerto a utilizar
         while (puertoEnum.hasMoreElements()) {
             CommPortIdentifier actualPuertoID = (CommPortIdentifier) puertoEnum.nextElement();
             if (PUERTO.equals(actualPuertoID.getName())) {
@@ -161,18 +181,21 @@ public class InterfazBrazo extends JFrame implements ActionListener, ChangeListe
                 break;
             }
         }
-
+        // Mensaje de error al tener una conexion fallida con el puerto 
         if (puertoID == null) {
             mostrarError("No se puede encontrar el puerto");
             System.exit(ERROR);
         }
 
         try {
+            // Abrimos el puerto serial y usamos el nombre de la clase para la aplicacion
             serialPort = (SerialPort) puertoID.open(this.getClass().getName(), TIMEOUT);
 
+            // Asignamos los parametros del puerto
             serialPort.setSerialPortParams(DATA_RATE, SerialPort.DATABITS_8,
                     SerialPort.STOPBITS_2, SerialPort.PARITY_NONE);
 
+            // Obtenemos el flujo de comuniciacion del puerto
             output = serialPort.getOutputStream();
         } catch (Exception e) {
             mostrarError(e.getMessage());
@@ -180,6 +203,10 @@ public class InterfazBrazo extends JFrame implements ActionListener, ChangeListe
         }
     }
 
+    /*
+    Metodo que nos permite transmitir los datos mediante el canal de salida
+    para que el IDE arduino pueda recibirlos
+     */
     private void enviarDatos(String datos) {
         if (output != null) {
             try {
@@ -194,10 +221,19 @@ public class InterfazBrazo extends JFrame implements ActionListener, ChangeListe
         }
     }
 
+    /*
+    Metodo que muestra alguna clase de error ocurrido en los procesos de comunicacion
+    o envio de datos
+     */
     public void mostrarError(String mensaje) {
         JOptionPane.showMessageDialog(this, mensaje, "ERROR", JOptionPane.ERROR_MESSAGE);
     }
 
+    /*
+    Metodo de escucha al hacer click en los botones de la interfaz para que
+    puedan realizar el funcionamiento para lo que fueron programados y poder
+    realizar el envio de datos al IDE arduino
+     */
     @Override
     public void actionPerformed(ActionEvent e) {
         if (e.getSource() == btnIzq) {
@@ -215,29 +251,42 @@ public class InterfazBrazo extends JFrame implements ActionListener, ChangeListe
             abortar = "S";
             enviarDatos(abortar);
         }
-        if (e.getSource() == btnDemo) {
-            System.out.println("R");
-            demo = "R";
-            enviarDatos(demo);
+        if (e.getSource() == btnDesbloquear) {
+            System.out.println("S");
+            desbloquear = "S";
+            enviarDatos(desbloquear);
         }
         if (e.getSource() == btnBloquear) {
             System.out.println("S");
             bloquear = "S";
             enviarDatos(bloquear);
         }
-        if (e.getSource() == btnDesbloquear) {
-            System.out.println("S");
-            desbloquear = "S";
-            enviarDatos(desbloquear);
+        if (e.getSource() == btnReproducir) {
+            System.out.println("R");
+            reproducir = "R";
+            enviarDatos(reproducir);
         }
-
+        if (e.getSource() == btnGrabar) {
+            System.out.println("G");
+            grabar = "G";
+            enviarDatos(grabar);
+        }
+        if (e.getSource() == btnNoGrabar) {
+            System.out.println("H");
+            grabar = "H";
+            enviarDatos(grabar);
+        }
     }
 
+    /*
+    Metodo de escucha al hacer click en los slider's de la interfaz para que
+    puedan realizar el funcionamiento para lo que fueron programados y poder
+    realizar el envio de datos al IDE arduino para el movimiento del brazo
+     */
     @Override
     public void stateChanged(ChangeEvent e) {
         if (e.getSource() == sliderP) {
             if (sliderP.getValue() >= 2) {
-//            System.out.println("P" + sliderP.getValue());
                 pinza = "P" + sliderP.getValue();
                 System.out.println(pinza);
                 enviarDatos(pinza);
@@ -245,7 +294,6 @@ public class InterfazBrazo extends JFrame implements ActionListener, ChangeListe
         }
         if (e.getSource() == sliderM) {
             if (sliderM.getValue() >= 25) {
-//            System.out.println("M" + sliderM.getValue());
                 munheca = "M" + sliderM.getValue();
                 System.out.println(munheca);
                 enviarDatos(munheca);
@@ -253,7 +301,6 @@ public class InterfazBrazo extends JFrame implements ActionListener, ChangeListe
         }
         if (e.getSource() == sliderC) {
             if (sliderC.getValue() >= 80 && sliderC.getValue() <= 145) {
-//            System.out.println("C" + sliderC.getValue());
                 codo = "C" + sliderC.getValue();
                 System.out.println(codo);
                 enviarDatos(codo);
@@ -261,7 +308,6 @@ public class InterfazBrazo extends JFrame implements ActionListener, ChangeListe
         }
         if (e.getSource() == sliderB) {
             if (sliderB.getValue() >= 40) {
-//            System.out.println("B" + sliderB.getValue());
                 brazo = "B" + sliderB.getValue();
                 System.out.println(brazo);
                 enviarDatos(brazo);

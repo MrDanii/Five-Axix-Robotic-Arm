@@ -1,5 +1,14 @@
 /*
-
+* MATERIA:
+* SISTEMAS PROGRAMABLES 
+* 
+* PERIODO:
+* AGOSTO - DICIEMBRE 2018
+*
+* @AUTORES
+* CAMPOS MAGALLANES ANA LUISA
+* DAVALOS ROMERO DANIEL
+* ESPARZA GUEVARA NESTOR PAUL
 */
 package BrazoRobotico;
 
@@ -31,12 +40,11 @@ public class PruebaBrazoRobotico {
         //</editor-fold>
 
         InterfazBrazo app = new InterfazBrazo();
-
+   
         app.setBounds(0, 0, 500, 500);
         app.setLocationRelativeTo(null);
         app.setResizable(false);
         app.setVisible(true);
         app.setDefaultCloseOperation(EXIT_ON_CLOSE);
     }
-    
 }
