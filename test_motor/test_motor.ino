@@ -1,4 +1,15 @@
 /*
+ * *******************************************************************************************
+ * Este codigo permite controlar un brazo robotico a traves de una lectura del monitor serie *
+ * de datos enviados desde una interfaz realizada en java netbeans.                          *
+ * @autor Campos Magallanes Ana Luisa                                                        *
+ * @autor Davalos Romero Daniel                                                              *
+ * @autor Esparza Guevara Nestor Paul                                                        *
+ * Libreria RXTXcomm                                                                         *
+ * *******************************************************************************************
+ */
+ 
+/*
     Definimos las librerias que se van a utilizar, una para
     controlar el movimiento de los servomotores (Servo.h)
     y otra pa controlar el motor a pasos (Stepper.h)
@@ -6,6 +17,7 @@
 */
 #include <Servo.h>
 #include <Stepper.h>
+
 /*
    Definimos las variables de los servomotores junto con los
    pin's utilizados en la placa arduino
@@ -18,6 +30,7 @@ Servo ServoP;
 Servo ServoM;
 Servo ServoC;
 Servo ServoB;
+
 /*
     Definmos una posicion inicial del brazo robotico
     p - pinza
@@ -32,7 +45,10 @@ int b = 40;
 int estado; // Variable de lectura de boton
 int bloqueo = 0; // Variable para bloquear ejecucion de brazo dependiendo de su valor
 String dato; // Variable para almacenar movimientos del brazo
-boolean demo = false; // Variable que determina si el modo demo para el brazo esta activado
+boolean demo = false; // Variable que determina reproducir o no la secuencia grabada para el brazo
+String arreglo[500]; // Arreglo que ayudara a guardar la secuencia grabada por el usuario
+boolean grabar = false; // Variable que dependiendo de su valor nos permitira grabar una secuencia de movimientos o no
+int cont = 0; // Variable que almacena las pocisiones grabadas en la secuencia
 
 const int BOTON = 29; // Pin de boton
 const int LEDVERDE = 31; // Pin led verde
@@ -52,6 +68,7 @@ void setup() {
   ServoC.attach(11);
   ServoB.attach(12);
   stepper.setSpeed(50); // Velocidad de giro del servomotor
+  
   /*
      Definimos los tipos (entrada - salida) de cada componente utilizado
   */
@@ -60,17 +77,15 @@ void setup() {
   pinMode(LEDAMARILLO, OUTPUT);
   pinMode(LEDROJO, OUTPUT);
   pinMode(LED_BUILTIN, OUTPUT);
-  /*
-     Valores por default de inicio para cada led
-  */
+
   digitalWrite(LEDVERDE, LOW);
   digitalWrite(LEDAMARILLO, HIGH);
   digitalWrite(LEDROJO, HIGH);
   digitalWrite(LED_BUILTIN, LOW);
 
-  Serial.begin(9600); // Inicializamos la conexion del puerto serial
-  Serial.setTimeout(10); // Tiempo de espera serial para leer datos
 
+  Serial.begin(9600); // Inicializamos la conexion del puerto serial
+  Serial.setTimeout(10); // Defnimos el tiempo de espera serial para leer datos
 }
 
 /*
@@ -80,22 +95,38 @@ void setup() {
 */
 void loop() {
   estado = digitalRead(BOTON); // Almacenar variable boton en estado para bloquear o desbloquear
-  abortaBoton();
+  abortaBoton(); // Metodo que permite abortar la funcionalidad del brazo desde un boton fisico
+  
   /*
      Estructura condicional que evalua la variable demo,
-     si esta es true ejecuta la rutina en caso contrario no se ejecuta
+     si esta es true ejecuta la rutina grabada por el usuario en caso contrario no se ejecuta
+     y el brazo se mantendra en un manejo manual
   */
   if (demo) {
-    rutina();
+    rutina(); // Metodo que ejecuta la rutina grabada del brazo
+  }
+  
+  /*
+     Estructura condicional que evalua la variable grabar,
+     si esta es true comienza a grabarse una rutina para el movimiento del brazo
+     en caso contrario no se ejecuta
+  */
+  if (grabar) {
+    if (Serial.available()) { //Comprobamos si en el buffer hay datos
+      if (cont < 500) { // Si el contador es menor al espacio de datos disponibles en el arreglo
+        arreglo[cont++] = dato; // Almacenamos los datos ingresados para grabar la secuencia del brazo
+      }
+    }
   }
 
   if (Serial.available()) { //Comprobamos si en el buffer hay datos
     dato = Serial.readStringUntil('\n'); // Variable que almacena los datos enviados desde la interfaz java despues de leer un salto de linea
-    abortaBotonInterfaz();
-    lecturaMovimientoBrazo();
+    abortaBotonInterfaz(); // Metodo que permite abortar la funcionalidad del brazo desde un boton en la interfaz utilizada
+    lecturaMovimientoBrazo(); // Metodo que permite el movimiento del brazo dependiendo del motor que se requiera utilizar
   }
-  lecturaLeds();
-  rangoMovimientoBrazo();
+  lecturaLeds(); // Metodo que permite dar informacion fisica al usuario del estado en el que se encentra el brazo
+  rangoMovimientoBrazo(); // Metodo que establece los limites de movimiento del brazo en cada motor
+  
   /*
      Valores LOW para que el motor a pasos quede con giro libre y evitar sobrecalentamiento en ellos
   */
@@ -107,7 +138,7 @@ void loop() {
 
 /*
   Metodo para la funcionalidad del boton fisico para
-  detener la demostracion en caso de que se este ejecutando.
+  detener la grabacion en caso de que se este ejecutando.
   Este hace lectura al oprimir el boton para incrementar
   el valor de la variable bloqueo y asi desactivar el demo que este en ejecucion
 */
@@ -123,10 +154,10 @@ void abortaBoton() {
 }
 
 /*
-  Metodo para abortar el demo que este ejecutando el brazo robotico
+  Metodo para abortar la agrabacion que este ejecutando el brazo robotico
   en caso de que se oprima el boton desde la interfaz(El boton al ser oprimido envia un
   caracter para ser leido desde la interfaz serial de arduino).
-  Se utiliza una estructura condicional para terminar el demo
+  Se utiliza una estructura condicional para terminar la secuencia
 */
 void abortaBotonInterfaz() {
   if (dato.substring(0, 1) == "S")
@@ -144,15 +175,20 @@ void abortaBotonInterfaz() {
 */
 void lecturaMovimientoBrazo() {
   if (bloqueo == 0 && demo == false) {
-    digitalWrite(LEDROJO, HIGH);
-    digitalWrite(LEDVERDE, LOW);
-    digitalWrite(LEDAMARILLO, HIGH);
+    if (grabar == false) { // Si el brazo no esta en modo de grabacion, el led verde se mantiene encendido
+      digitalWrite(LEDROJO, HIGH);
+      digitalWrite(LEDVERDE, LOW);
+      digitalWrite(LEDAMARILLO, HIGH);
+    }
+    
     /*
        Condicionales para leer movimiento de servomotores
        P - pinza
        M - muñeca
        C - Codo
        B - brazo
+       Esto para cada dato que arduino lea por serial sea identificado y
+       mueva el servo correspondiente a dicha instruccion con su grado correspondiente
     */
     if (dato.substring(0, 1) == "P")
     {
@@ -170,6 +206,7 @@ void lecturaMovimientoBrazo() {
     {
       b = dato.substring(1).toInt();
     }
+    
     /*
        Condicionales para el movimiento de motor a pasos(izquierda - derecha)
        su movimiento sera de 20 grados en este caso cada que el boton de la interfaz
@@ -183,10 +220,33 @@ void lecturaMovimientoBrazo() {
     {
       stepper.step(20);
     }
-    // Condicional para activar la rutina demo en caso de que el valor recibido sea R
+    
+    // Condicional para activar la rutina de grabacion en caso de que el valor recibido sea R
     else if (dato.substring(0, 1) == "R")
     {
-      demo = true;
+      demo = true; // Bandera que permite que la grabacion sea ejecutada
+    }
+    
+    // Condicional para activar el funcionamiento de grabacion en caso de que el valor recibido sea G
+    else if (dato.substring(0, 1) == "G")
+    {
+      cont = 0; // Variable que nos limpia los datos si existe una rutina grabada anteriormente
+      grabar = true; // Bandera que permite almacenar los movimientos del brazo mientras sea verdadera
+      // Informacion fisica al usuario con el led en amarillo (estado de grabacion)
+      digitalWrite(LEDROJO, LOW);
+      digitalWrite(LEDVERDE, LOW);
+      digitalWrite(LEDAMARILLO, HIGH);
+    }
+    
+    // Condicional para desactivar el modo de grabado en caso de recibir el valor H
+    else if (dato.substring(0, 1) == "H")
+    {
+      grabar = false; // Bandera que evita que los movimientos del brazo se graben cuando su valor es falso
+      // Informacion fisica al usuario con el led en verde (estado manual)
+      digitalWrite(LEDROJO, HIGH);
+      digitalWrite(LEDVERDE, LOW);
+      digitalWrite(LEDAMARILLO, HIGH);
+
     }
   }
 }
@@ -195,16 +255,17 @@ void lecturaMovimientoBrazo() {
   Metodo que lee el estado de cada led para otorgar informacion fisica para el brazo
   Bloqueo = 1, Led rojo, el brazo bloqueado
   Bloqueo = 2, asigna el valor 0 a la variable bloqueo(desactivar) y permite hacer uso del brazo
-  **El valor leido de los led's es el opuesto ya que su RGB tiene el positivo en comun
 */
 void lecturaLeds() {
   if (bloqueo == 1) {
+    // Informacion fisica al usuario con el led en rojo (estado de bloqueo)
     digitalWrite(LEDROJO, LOW);
     digitalWrite(LEDVERDE, HIGH);
     digitalWrite(LEDAMARILLO, HIGH);
   }
   else if (bloqueo == 2) {
     bloqueo = 0;
+    // Informacion fisica al usuario con el led en verde (estado manual)
     digitalWrite(LEDROJO, HIGH);
     digitalWrite(LEDAMARILLO, HIGH);
     digitalWrite(LEDVERDE, LOW);
@@ -231,35 +292,59 @@ void rangoMovimientoBrazo() {
 }
 
 /*
-   Metodo de rutina predefinida para que sea llevada a cabo por el brazo
+   Metodo de secuencia de grabacion predefinida para que sea llevada a cabo por el brazo
    escribiendo sus valores en los servomotores para ser ejecutados.
-   (Se mantiene el led amarillo prendido para informacion fisica de ejecucion del demo)
+   (Se mantiene el led amarillo prendido para informacion fisica de ejecucion de la grabacion)
 */
 void rutina() {
   digitalWrite(LEDROJO, HIGH);
   digitalWrite(LEDVERDE, HIGH);
   digitalWrite(LEDAMARILLO, LOW);
+  grabar = false; // Bandera para evitar que los movimientos sean grabados
+  
   /*
-     Descripcion de ciclos para la demostracion:
-     Baja la pinza
-     Cierra piinza
-     Levanta pinza
-     abre pinza
+     Condicionales para leer movimiento de servomotores en el arreglo de movimientos
+     P - pinza
+     M - muñeca
+     C - Codo
+     B - brazo
+     Esto para cada dato que arduino lea sea identificado y mueva el servo correspondiente
+     a dicha instruccion con su grado correspondiente
   */
-  for (int l = 150; l >= 25; l--) {
-    ServoM.write(l);
-    delay(10);
-  }
-  for (int i = 2; i <= 30; i++) {
-    ServoP.write(i);
-    delay(25);
-  }
-  for (int k = 25; k <= 150; k++) {
-    ServoM.write(k);
-    delay(10);
-  }
-  for (int j = 30; j >= 2; j--) {
-    ServoP.write(j);
-    delay(25);
+  for (int i = 1; i < cont; i++) {
+    delay(100);
+    if (arreglo[i].substring(0, 1) == "P")
+    {
+      p = arreglo[i].substring(1).toInt();
+    }
+    else if (arreglo[i].substring(0, 1) == "M")
+    {
+      m = arreglo[i].substring(1).toInt();
+    }
+    else if (arreglo[i].substring(0, 1) == "C")
+    {
+      c = arreglo[i].substring(1).toInt();
+    }
+    else if (arreglo[i].substring(0, 1) == "B")
+    {
+      b = arreglo[i].substring(1).toInt();
+    }
+    
+    /*
+       Condicionales para el movimiento de motor a pasos(izquierda - derecha)
+       su movimiento sera de 20 grados en este caso cada que la grabacion de rutina
+       ejecutada lo requiera
+    */
+    else if (arreglo[i].substring(0, 1) == "I")
+    {
+      stepper.step(-20);
+      delay(50);
+    }
+    else if (arreglo[i].substring(0, 1) == "D")
+    {
+      stepper.step(20);
+      delay(50);
+    }
+    rangoMovimientoBrazo(); // Metodo que establece los limites de movimiento del brazo en cada motor
   }
 }

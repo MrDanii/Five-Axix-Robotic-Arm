@@ -2,7 +2,7 @@
 
 ## Descripción del proyecto
 
-El presente proyecto consiste en un brazo robótico de 5 ejes el cual sigue una serie de pasos hasta que se le de la instrucción de abortar.
+El presente proyecto consiste en un brazo robótico de 5 ejes al cual se le pueden programar una serie de pasos que realiza hasta que se le de la instrucción de abortar.
 
 El brazo cuenta con un botón que sirve para fallos de emergencias.
 
@@ -83,4 +83,15 @@ Los 5 ejes con los que cuenta el brazo son:
  >Se ejecutará la siguiente interfaz gráfica con la que podremos controlar el brazo
 
    ![](/Imagenes/Interfaz.png)
+
+Con los sliders podemos configurar el ángulo en el que queremos la muñeca, el codo, el brazo y la pinza.
+
+Con los botones 'Izquiera' y 'Derecha' controlamos el ángulo hacia el que apunta la base.
+
+Con el botón 'Bloquear' se bloquea el brazo de manera que no se puedan ejecutar los pasos que seleccionemos.
+Con el botón 'Desbloquear' lo desbloqueamos.
+Con el botón 'Play' comenzamos a grabar los pasos que programemos a continuacion.
+Con el botón 'Stop' dejamos de programar los movimientos.
+Con el botón 'Reproducir' ejecutamos los pasos programados anteriormente.
+Con el botón 'Abortar' detenemos la ejecución de los pasos programados.
 
